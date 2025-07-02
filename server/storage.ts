@@ -48,6 +48,18 @@ export class MemStorage implements IStorage {
       ...insertResponse,
       id,
       createdAt: new Date(),
+      // Ensure proper null values for optional fields
+      itResources: insertResponse.itResources || null,
+      itResourcesOther: insertResponse.itResourcesOther || null,
+      itProblems: insertResponse.itProblems || null,
+      helpMethod: insertResponse.helpMethod || null,
+      formKnowledge: insertResponse.formKnowledge || null,
+      securityConfidence: insertResponse.securityConfidence || null,
+      remoteAccess: insertResponse.remoteAccess || null,
+      internalSecurity: insertResponse.internalSecurity || null,
+      improvements: insertResponse.improvements || null,
+      aiOpinion: insertResponse.aiOpinion || null,
+      feedback: insertResponse.feedback || null,
     };
     this.surveyResponses.set(id, response);
     return response;

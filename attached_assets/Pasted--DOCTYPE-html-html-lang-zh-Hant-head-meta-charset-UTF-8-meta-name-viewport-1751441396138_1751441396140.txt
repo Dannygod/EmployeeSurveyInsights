@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>員工問卷：IT基礎設施改善</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        /* 自訂 checkbox 與 radio 的樣式 */
+        .form-checkbox, .form-radio {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.25rem;
+            display: inline-block;
+            position: relative;
+            vertical-align: middle;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .form-radio {
+            border-radius: 50%;
+        }
+        .form-checkbox:checked, .form-radio:checked {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .form-checkbox:checked::after {
+            content: '✔';
+            font-size: 0.8rem;
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .form-radio:checked::after {
+            content: '';
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .form-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
+        
+        <!-- 表單標頭 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">讓我們更懂你</h1>
+            <p class="text-lg text-slate-600 mt-2">IT基礎設施改善問卷</p>
+        </div>
+
+        <!-- 表單主體 -->
+        <form id="surveyForm" class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg space-y-10">
+
+            <!-- 基本資料 -->
+            <fieldset class="space-y-6">
+                <legend class="text-2xl font-bold border-b-2 border-indigo-500 pb-2 mb-6">👤 基本資料</legend>
+                <div>
+                    <label for="employeeId" class="block text-md font-medium text-slate-700 mb-2">工號</label>
+                    <input type="text" id="employeeId" name="employeeId" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label for="employeeName" class="block text-md font-medium text-slate-700 mb-2">名字 (如 Ben Chen)</label>
+                    <input type="text" id="employeeName" name="employeeName" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <span class="block text-md font-medium text-slate-700 mb-2">公司</span>
+                    <div class="flex flex-col sm:flex-row sm:space-x-6">
+                        <label class="form-label"><input type="radio" name="company" value="VIA" class="form-radio"><span>VIA</span></label>
+                        <label class="form-label"><input type="radio" name="company" value="VLI" class="form-radio"><span>VLI</span></label>
+                        <label class="form-label"><input type="radio" name="company" value="VIA NEXT" class="form-radio"><span>VIA NEXT</span></label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Part 1 -->
+            <fieldset class="space-y-6">
+                <legend class="text-2xl font-bold border-b-2 border-indigo-500 pb-2 mb-6">🧠 Part 1：日常使用經驗與資料相關困擾</legend>
+                <!-- Q1 -->
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">1. 您在日常工作中最常使用下列哪些 IT 資源？ (可複選)</label>
+                    <div class="space-y-2">
+                        <label class="form-label"><input type="checkbox" name="it_resources" value="network" class="form-checkbox"><span>公司內網/WiFi/VPN</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_resources" value="printer" class="form-checkbox"><span>印表機等設備</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_resources" value="meeting_tools" class="form-checkbox"><span>視訊會議工具 (如 Teams)</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_resources" value="login" class="form-checkbox"><span>系統登入與帳號密碼</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_resources" value="pc_setup" class="form-checkbox"><span>電腦基礎設定</span></label>
+                        <div class="flex items-center">
+                            <label class="form-label flex-shrink-0"><input type="checkbox" name="it_resources" value="other" class="form-checkbox"><span>其他：</span></label>
+                            <input type="text" name="it_resources_other" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </div>
+                <!-- Q2 -->
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">2. 在使用上述 IT 資源時，您是否曾遇到以下困擾？ (可複選)</label>
+                    <div class="space-y-2">
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="slow_network" class="form-checkbox"><span>網速不穩或延遲</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="password" class="form-checkbox"><span>密碼常忘記，重設流程麻煩</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="no_help" class="form-checkbox"><span>找不到人幫忙處理 IT 問題</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="device_problem" class="form-checkbox"><span>設備問題 (如電腦太舊、印表機難用、螢幕顯示異常)</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="data_loss" class="form-checkbox"><span>曾因設備故障、病毒、勒索軟體或誤操作導致工作資料遺失或無法存取</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="software_crash" class="form-checkbox"><span>軟體應用程式異常或當機 (例如：Outlook、Office、瀏覽器)</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="slow_boot" class="form-checkbox"><span>電腦開機異常或系統運行緩慢</span></label>
+                        <label class="form-label"><input type="checkbox" name="it_issues" value="no_issue" class="form-checkbox"><span>沒有遇過困擾</span></label>
+                        <div class="flex items-center">
+                            <label class="form-label flex-shrink-0"><input type="checkbox" name="it_issues" value="other" class="form-checkbox"><span>其他：</span></label>
+                            <input type="text" name="it_issues_other" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </div>
+                <!-- Q3 -->
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">3. 當您遇到 IT 問題時，您通常： (單選)</label>
+                    <div class="space-y-2">
+                        <label class="form-label"><input type="radio" name="problem_solving" value="self" class="form-radio"><span>自己Google、AI或問同事</span></label>
+                        <label class="form-label"><input type="radio" name="problem_solving" value="it_service" class="form-radio"><span>看IT service</span></label>
+                        <label class="form-label"><input type="radio" name="problem_solving" value="ticket" class="form-radio"><span>填表單報修 (是否知道在哪填？ ☐知道 ☐不知道)</span></label>
+                        <label class="form-label"><input type="radio" name="problem_solving" value="call_it" class="form-radio"><span>打電話找IT 來修</span></label>
+                        <div class="flex items-center">
+                             <label class="form-label flex-shrink-0"><input type="radio" name="problem_solving" value="other" class="form-radio"><span>其他：</span></label>
+                            <input type="text" name="problem_solving_other" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </div>
+                 <!-- Q4 -->
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">4. 您對於公司目前在防範網路釣魚、惡意軟體或資料外洩等資安威脅的防護能力，抱持何種看法？ (單選)</label>
+                    <div class="space-y-2">
+                        <label class="form-label"><input type="radio" name="security_confidence" value="very_confident" class="form-radio"><span>非常有信心，覺得公司資安防護很完善</span></label>
+                        <label class="form-label"><input type="radio" name="security_confidence" value="confident" class="form-radio"><span>有信心，但偶爾仍會擔心</span></label>
+                        <label class="form-label"><input type="radio" name="security_confidence" value="average" class="form-radio"><span>信心一般，覺得有改善空間</span></label>
+                        <label class="form-label"><input type="radio" name="security_confidence" value="not_confident" class="form-radio"><span>沒有信心，擔心資安威脅</span></label>
+                        <label class="form-label"><input type="radio" name="security_confidence" value="not_sure" class="form-radio"><span>不清楚</span></label>
+                    </div>
+                </div>
+                <!-- Q5 -->
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">5. 您對於目前遠端工作或外部存取公司資源時的資安驗證流程的便利性與安全性感受為何？ (單選)</label>
+                    <div class="space-y-2">
+                        <label class="form-label"><input type="radio" name="remote_security" value="very_good" class="form-radio"><span>非常便利且安全，沒有任何困擾</span></label>
+                        <label class="form-label"><input type="radio" name="remote_security" value="ok" class="form-radio"><span>尚可，安全有保障但偶爾感到不便</span></label>
+                        <label class="form-label"><input type="radio" name="remote_security" value="not_convenient" class="form-radio"><span>不太便利，流程繁瑣或常出錯</span></label>
+                        <label class="form-label"><input type="radio" name="remote_security" value="insecure" class="form-radio"><span>擔心安全性不足，操作上有些疑慮</span></label>
+                        <label class="form-label"><input type="radio" name="remote_security" value="not_sure" class="form-radio"><span>不清楚這些流程</span></label>
+                    </div>
+                </div>
+                <!-- Q6 -->
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">6. 您是否曾擔心公司內部不同部門或個人電腦之間，資料傳輸或存取可能存在未經授權的風險？ (單選)</label>
+                    <div class="space-y-2">
+                        <label class="form-label"><input type="radio" name="internal_risk" value="often" class="form-radio"><span>經常擔心，覺得內部存取可能不夠安全</span></label>
+                        <label class="form-label"><input type="radio" name="internal_risk" value="sometimes" class="form-radio"><span>偶爾會擔心</span></label>
+                        <label class="form-label"><input type="radio" name="internal_risk" value="rarely" class="form-radio"><span>不太擔心，相信公司內部防護良好</span></label>
+                        <label class="form-label"><input type="radio" name="internal_risk" value="never" class="form-radio"><span>從未擔心過</span></label>
+                        <label class="form-label"><input type="radio" name="internal_risk" value="not_sure" class="form-radio"><span>不清楚</span></label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Part 2 -->
+            <fieldset class="space-y-6">
+                <legend class="text-2xl font-bold border-b-2 border-indigo-500 pb-2 mb-6">💡 Part 2：對 IT 部門的期待</legend>
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">1. 您最希望 IT 團隊改進哪些方向？ (最多選 3 項)</label>
+                    <div id="improvements-options" class="space-y-2">
+                        <label class="form-label"><input type="checkbox" name="improvements" value="network_speed" class="form-checkbox"><span>提升網路穩定與速度</span></label>
+                        <label class="form-label"><input type="checkbox" name="improvements" value="clearer_instructions" class="form-checkbox"><span>資訊系統使用教學更清楚</span></label>
+                        <label class="form-label"><input type="checkbox" name="improvements" value="faster_response" class="form-checkbox"><span>IT問題回應速度更快</span></label>
+                        <label class="form-label"><input type="checkbox" name="improvements" value="less_password_hassle" class="form-checkbox"><span>減少密碼登入困擾</span></label>
+                        <label class="form-label"><input type="checkbox" name="improvements" value="device_upgrade" class="form-checkbox"><span>員工設備汰換/效能提升</span></label>
+                        <label class="form-label"><input type="checkbox" name="improvements" value="progress_tracking" class="form-checkbox"><span>有問題時能即時追蹤處理進度</span></label>
+                        <label class="form-label"><input type="checkbox" name="improvements" value="backup_restore" class="form-checkbox"><span>提供更可靠的工作資料備份與還原機制</span></label>
+                        <div class="flex items-center">
+                            <label class="form-label flex-shrink-0"><input type="checkbox" name="improvements" value="other" class="form-checkbox"><span>其他：</span></label>
+                            <input type="text" name="improvements_other" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                    <div id="max-selection-msg" class="text-red-600 text-sm mt-2 hidden">最多只能選擇 3 個項目。</div>
+                </div>
+            </fieldset>
+
+            <!-- Part 3 -->
+            <fieldset class="space-y-6">
+                <legend class="text-2xl font-bold border-b-2 border-indigo-500 pb-2 mb-6">💻 Part 3：AI工具與未來技術</legend>
+                <div>
+                    <label class="block text-md font-medium text-slate-700 mb-3">1. 您對於未來公司導入AI工具或開發AI相關應用的看法為何？ (單選)</label>
+                    <div class="space-y-2">
+                        <label class="form-label"><input type="radio" name="ai_opinion" value="support" class="form-radio"><span>非常支持，認為能提升工作效率</span></label>
+                        <label class="form-label"><input type="radio" name="ai_opinion" value="accept" class="form-radio"><span>可接受，但需要有明確的應用場景</span></label>
+                        <label class="form-label"><input type="radio" name="ai_opinion" value="reserved" class="form-radio"><span>持保留態度，擔心資訊安全或取代人力</span></label>
+                        <label class="form-label"><input type="radio" name="ai_opinion" value="willing_to_learn" class="form-radio"><span>不了解，但願意學習</span></label>
+                        <label class="form-label"><input type="radio" name="ai_opinion" value="not_support" class="form-radio"><span>不支持</span></label>
+                        <div class="flex items-center">
+                            <label class="form-label flex-shrink-0"><input type="radio" name="ai_opinion" value="other" class="form-radio"><span>其他：</span></label>
+                            <input type="text" name="ai_opinion_other" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Part 4 -->
+            <fieldset>
+                <legend class="text-2xl font-bold border-b-2 border-indigo-500 pb-2 mb-6">💬 Part 4：意見與建議</legend>
+                <div>
+                    <label for="suggestions" class="block text-md font-medium text-slate-700 mb-2">您對 IT 部門還有什麼建議或期待？ (開放填寫)</label>
+                    <textarea id="suggestions" name="suggestions" rows="5" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="請在此寫下您的寶貴意見..."></textarea>
+                </div>
+            </fieldset>
+
+            <!-- 提交按鈕 -->
+            <div class="text-center pt-6">
+                 <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-12 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 transition-transform transform hover:scale-105">
+                    提交問卷
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // 處理 Part 2 最多選 3 項的邏輯
+        const improvementsCheckboxes = document.querySelectorAll('input[name="improvements"]');
+        const maxSelectionMsg = document.getElementById('max-selection-msg');
+        const maxSelections = 3;
+
+        improvementsCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const selectedCount = document.querySelectorAll('input[name="improvements"]:checked').length;
+                if (selectedCount > maxSelections) {
+                    checkbox.checked = false; // 取消當前的選擇
+                    maxSelectionMsg.classList.remove('hidden'); // 顯示提示訊息
+                    // 短暫顯示後隱藏
+                    setTimeout(() => {
+                        maxSelectionMsg.classList.add('hidden');
+                    }, 3000);
+                }
+            });
+        });
+
+        // 處理表單提交事件
+        document.getElementById('surveyForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // 防止表單真的提交
+            
+            // 可以在這裡加入收集表單資料的邏輯
+            // 例如: const formData = new FormData(this);
+            // for (let [key, value] of formData.entries()) {
+            //     console.log(key, value);
+            // }
+
+            // 顯示一個提交成功的訊息
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            submitButton.textContent = '感謝您的填寫！';
+            submitButton.disabled = true;
+            submitButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            submitButton.classList.add('bg-green-600');
+        });
+    </script>
+
+</body>
+</html>

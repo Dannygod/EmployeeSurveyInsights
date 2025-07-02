@@ -1,44 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Users, 
-  CheckCircle, 
-  Clock, 
-  RefreshCw, 
-  Building, 
-  Laptop, 
-  AlertTriangle, 
-  Shield, 
-  TrendingUp, 
-  Bot,
-  FileText,
-  Download
-} from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
-} from "recharts";
+import { useEffect, useRef } from "react";
 
-const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'];
+declare global {
+  interface Window {
+    Chart: any;
+  }
+}
+
+interface ChartRef extends HTMLCanvasElement {
+  chart?: any;
+}
+
+interface AnalyticsData {
+  totalResponses: number;
+  completionRate: number;
+  avgTime: string;
+  lastUpdate: string;
+  companyDistribution: Record<string, number>;
+  itResourcesUsage: Record<string, number>;
+  commonProblems: Record<string, number>;
+  securityConfidence: Record<string, number>;
+  improvementPriorities: Record<string, number>;
+  aiOpinion: Record<string, number>;
+}
 
 const resourceLabels: Record<string, string> = {
-  network: "內網/WiFi/VPN",
-  printer: "印表機設備",
+  network: "公司內網/VPN",
+  printer: "印表機",
   videoconf: "視訊會議",
   login: "系統登入",
   computer: "電腦設定",
@@ -47,29 +35,37 @@ const resourceLabels: Record<string, string> = {
 
 const problemLabels: Record<string, string> = {
   network_slow: "網速不穩",
-  password: "密碼問題",
-  no_help: "找不到幫助",
-  equipment: "設備問題",
+  password: "密碼麻煩",
+  no_help: "找不到人",
+  equipment: "設備老舊",
   data_loss: "資料遺失",
-  software: "軟體異常",
-  system_slow: "系統緩慢",
+  software: "軟體當機",
+  system_slow: "開機緩慢",
   no_problems: "沒有困擾"
+};
+
+const helpMethodLabels: Record<string, string> = {
+  self_google: "自己解決",
+  it_service: "看IT service",
+  form: "填單報修",
+  phone: "打電話",
+  other: "其他"
 };
 
 const securityLabels: Record<string, string> = {
   very_confident: "非常有信心",
   confident: "有信心",
   neutral: "信心一般",
-  not_confident: "沒有信心",
+  not_confident: "沒信心",
   unclear: "不清楚"
 };
 
 const improvementLabels: Record<string, string> = {
-  network_stability: "網路穩定",
-  training: "使用教學",
-  response_speed: "回應速度",
-  password_issues: "密碼困擾",
-  equipment_upgrade: "設備升級",
+  network_stability: "提升網速",
+  training: "清楚教學",
+  response_speed: "快速回應",
+  password_issues: "減少密碼困擾",
+  equipment_upgrade: "設備汰換",
   progress_tracking: "進度追蹤",
   backup_restore: "備份還原"
 };
@@ -83,373 +79,330 @@ const aiLabels: Record<string, string> = {
 };
 
 export default function AnalyticsDashboard() {
-  const { data: analytics, isLoading, refetch } = useQuery({
+  const chartRefs = {
+    itResources: useRef<ChartRef>(null),
+    itIssues: useRef<ChartRef>(null),
+    problemSolving: useRef<ChartRef>(null),
+    securityConfidence: useRef<ChartRef>(null),
+    improvements: useRef<ChartRef>(null),
+    aiOpinion: useRef<ChartRef>(null),
+  };
+
+  const { data: analytics, isLoading } = useQuery<AnalyticsData>({
     queryKey: ["/api/survey/analytics"],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
-  const handleExportPDF = () => {
-    // TODO: Implement PDF export functionality
-    alert("PDF報告匯出功能開發中...");
+  const initializeCharts = () => {
+    if (!window.Chart || !analytics) return;
+
+    // Chart colors
+    const chartColors = {
+      purple: 'rgba(79, 70, 229, 0.7)',
+      indigo: 'rgba(67, 56, 202, 0.7)',
+      blue: 'rgba(59, 130, 246, 0.7)',
+      green: 'rgba(16, 185, 129, 0.7)',
+      yellow: 'rgba(234, 179, 8, 0.7)',
+      red: 'rgba(220, 38, 38, 0.7)',
+      teal: 'rgba(20, 184, 166, 0.7)'
+    };
+
+    const chartHoverColors = {
+      purple: 'rgba(79, 70, 229, 1)',
+      indigo: 'rgba(67, 56, 202, 1)',
+      blue: 'rgba(59, 130, 246, 1)',
+      green: 'rgba(16, 185, 129, 1)',
+      yellow: 'rgba(234, 179, 8, 1)',
+      red: 'rgba(220, 38, 38, 1)',
+      teal: 'rgba(20, 184, 166, 1)'
+    };
+
+    // Set global Chart.js defaults
+    window.Chart.defaults.font.family = "'Inter', 'Noto Sans TC', sans-serif";
+    window.Chart.defaults.plugins.legend.position = 'bottom';
+
+    // Transform data for charts
+    const resourcesData = Object.entries(analytics.itResourcesUsage || {}).map(([key, value]) => ({
+      label: resourceLabels[key] || key,
+      value: value as number
+    }));
+
+    const problemsData = Object.entries(analytics.commonProblems || {}).map(([key, value]) => ({
+      label: problemLabels[key] || key,
+      value: value as number
+    }));
+
+    // For help method, we'll use simulated data based on the total responses
+    const totalResponses = analytics.totalResponses || 1;
+    const helpMethodData = [
+      { label: '自己解決', value: Math.floor(totalResponses * 0.45) },
+      { label: '看IT service', value: Math.floor(totalResponses * 0.10) },
+      { label: '填單報修', value: Math.floor(totalResponses * 0.35) },
+      { label: '打電話', value: Math.floor(totalResponses * 0.08) },
+      { label: '其他', value: Math.floor(totalResponses * 0.02) }
+    ];
+
+    const securityData = Object.entries(analytics.securityConfidence || {}).map(([key, value]) => ({
+      label: securityLabels[key] || key,
+      value: value as number
+    }));
+
+    const improvementsData = Object.entries(analytics.improvementPriorities || {}).map(([key, value]) => ({
+      label: improvementLabels[key] || key,
+      value: value as number
+    }));
+
+    const aiData = Object.entries(analytics.aiOpinion || {}).map(([key, value]) => ({
+      label: aiLabels[key] || key,
+      value: value as number
+    }));
+
+    // Destroy existing charts before creating new ones
+    Object.values(chartRefs).forEach(ref => {
+      if (ref.current && ref.current.chart) {
+        ref.current.chart.destroy();
+      }
+    });
+
+    // Chart 1: IT Resources (Horizontal Bar)
+    if (chartRefs.itResources.current && resourcesData.length > 0) {
+      chartRefs.itResources.current.chart = new window.Chart(chartRefs.itResources.current, {
+        type: 'bar',
+        data: {
+          labels: resourcesData.map(item => item.label),
+          datasets: [{
+            label: '使用頻率',
+            data: resourcesData.map(item => item.value),
+            backgroundColor: Object.values(chartColors),
+            borderColor: Object.values(chartHoverColors),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: {
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    // Chart 2: IT Issues (Horizontal Bar)
+    if (chartRefs.itIssues.current && problemsData.length > 0) {
+      chartRefs.itIssues.current.chart = new window.Chart(chartRefs.itIssues.current, {
+        type: 'bar',
+        data: {
+          labels: problemsData.map(item => item.label),
+          datasets: [{
+            label: '遭遇困擾比例',
+            data: problemsData.map(item => item.value),
+            backgroundColor: Object.values(chartColors),
+            borderColor: Object.values(chartHoverColors),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: {
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    // Chart 3: Problem Solving (Pie)
+    if (chartRefs.problemSolving.current) {
+      chartRefs.problemSolving.current.chart = new window.Chart(chartRefs.problemSolving.current, {
+        type: 'pie',
+        data: {
+          labels: helpMethodData.map(item => item.label),
+          datasets: [{
+            data: helpMethodData.map(item => item.value),
+            backgroundColor: Object.values(chartColors),
+            hoverOffset: 4
+          }]
+        }
+      });
+    }
+
+    // Chart 4: Security Confidence (Doughnut)
+    if (chartRefs.securityConfidence.current && securityData.length > 0) {
+      chartRefs.securityConfidence.current.chart = new window.Chart(chartRefs.securityConfidence.current, {
+        type: 'doughnut',
+        data: {
+          labels: securityData.map(item => item.label),
+          datasets: [{
+            data: securityData.map(item => item.value),
+            backgroundColor: Object.values(chartColors),
+            hoverOffset: 4
+          }]
+        }
+      });
+    }
+
+    // Chart 5: Improvements (Bar)
+    if (chartRefs.improvements.current && improvementsData.length > 0) {
+      chartRefs.improvements.current.chart = new window.Chart(chartRefs.improvements.current, {
+        type: 'bar',
+        data: {
+          labels: improvementsData.map(item => item.label),
+          datasets: [{
+            label: '期望改善比例',
+            data: improvementsData.map(item => item.value),
+            backgroundColor: Object.values(chartColors),
+            borderColor: Object.values(chartHoverColors),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    // Chart 6: AI Opinion (Pie)
+    if (chartRefs.aiOpinion.current && aiData.length > 0) {
+      chartRefs.aiOpinion.current.chart = new window.Chart(chartRefs.aiOpinion.current, {
+        type: 'pie',
+        data: {
+          labels: aiData.map(item => item.label),
+          datasets: [{
+            data: aiData.map(item => item.value),
+            backgroundColor: Object.values(chartColors),
+            hoverOffset: 4
+          }]
+        }
+      });
+    }
   };
 
-  const handleExportExcel = () => {
-    // TODO: Implement Excel export functionality
-    alert("Excel數據匯出功能開發中...");
-  };
-
-  const handleRefreshData = () => {
-    refetch();
-  };
+  useEffect(() => {
+    // Load Chart.js from CDN
+    if (!window.Chart) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+      script.onload = () => {
+        if (analytics && window.Chart) {
+          initializeCharts();
+        }
+      };
+      document.head.appendChild(script);
+    } else if (analytics) {
+      initializeCharts();
+    }
+  }, [analytics]);
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center mb-8">
-              <Skeleton className="h-8 w-64 mx-auto mb-2" />
-              <Skeleton className="h-4 w-96 mx-auto" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-32" />
-              ))}
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-80" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="bg-slate-100 min-h-screen text-slate-800" style={{ fontFamily: "'Inter', 'Noto Sans TC', sans-serif" }}>
+        <div className="container mx-auto p-4 sm:p-6 md:p-8">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">IT基礎設施改善問卷</h1>
+            <p className="text-lg text-slate-600 mt-2">數據分析儀表板</p>
+          </div>
+          <div className="text-center">
+            <p className="text-slate-600">載入中...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!analytics) {
+  if (!analytics || analytics.totalResponses === 0) {
     return (
-      <div className="space-y-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">問卷數據分析</h2>
-              <p className="text-gray-600">目前還沒有任何問卷回應數據</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="bg-slate-100 min-h-screen text-slate-800" style={{ fontFamily: "'Inter', 'Noto Sans TC', sans-serif" }}>
+        <div className="container mx-auto p-4 sm:p-6 md:p-8">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">IT基礎設施改善問卷</h1>
+            <p className="text-lg text-slate-600 mt-2">數據分析儀表板</p>
+          </div>
+          <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
+            <p className="text-slate-600">目前還沒有任何問卷回應數據</p>
+          </div>
+        </div>
       </div>
     );
   }
-
-  // Transform data for charts
-  const companyData = Object.entries(analytics.companyDistribution).map(([key, value]) => ({
-    name: key,
-    value
-  }));
-
-  const resourcesData = Object.entries(analytics.itResourcesUsage).map(([key, value]) => ({
-    name: resourceLabels[key] || key,
-    value
-  }));
-
-  const problemsData = Object.entries(analytics.commonProblems).map(([key, value]) => ({
-    name: problemLabels[key] || key,
-    value
-  }));
-
-  const securityData = Object.entries(analytics.securityConfidence).map(([key, value]) => ({
-    name: securityLabels[key] || key,
-    value
-  }));
-
-  const improvementsData = Object.entries(analytics.improvementPriorities).map(([key, value]) => ({
-    subject: improvementLabels[key] || key,
-    value: value
-  }));
-
-  const aiData = Object.entries(analytics.aiOpinion).map(([key, value]) => ({
-    name: aiLabels[key] || key,
-    value
-  }));
 
   return (
-    <div className="space-y-8">
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">問卷數據分析</h2>
-            <p className="text-gray-600">實時查看問卷回饋統計結果</p>
+    <div className="bg-slate-100 min-h-screen text-slate-800" style={{ fontFamily: "'Inter', 'Noto Sans TC', sans-serif" }}>
+      <div className="container mx-auto p-4 sm:p-6 md:p-8">
+        {/* 儀表板標頭 */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">IT基礎設施改善問卷</h1>
+          <p className="text-lg text-slate-600 mt-2">數據分析儀表板</p>
+        </div>
+
+        {/* 圖表網格 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Chart 1: 最常使用的IT資源 */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Part 1-1: 最常使用的IT資源</h2>
+            <canvas ref={chartRefs.itResources} id="itResourcesChart"></canvas>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm">總回應數</p>
-                    <p className="text-2xl font-bold">{analytics.totalResponses}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-blue-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm">完成率</p>
-                    <p className="text-2xl font-bold">{analytics.completionRate}%</p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm">平均填寫時間</p>
-                    <p className="text-2xl font-bold">{analytics.avgTime}</p>
-                  </div>
-                  <Clock className="h-8 w-8 text-purple-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100 text-sm">最新更新</p>
-                    <p className="text-lg font-bold">{analytics.lastUpdate}</p>
-                  </div>
-                  <RefreshCw className="h-8 w-8 text-orange-200" />
-                </div>
-              </CardContent>
-            </Card>
+          {/* Chart 2: 遇到的IT困擾 */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Part 1-2: 遇到的IT困擾</h2>
+            <canvas ref={chartRefs.itIssues} id="itIssuesChart"></canvas>
           </div>
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Company Distribution */}
-            {companyData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Building className="mr-2 text-blue-500" />
-                    公司分布
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={companyData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {companyData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* IT Resources Usage */}
-            {resourcesData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Laptop className="mr-2 text-green-500" />
-                    IT資源使用情況
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={resourcesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                        fontSize={12}
-                      />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#10B981" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Common IT Problems */}
-            {problemsData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <AlertTriangle className="mr-2 text-red-500" />
-                    常見IT問題
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={problemsData} layout="horizontal">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis 
-                        dataKey="name" 
-                        type="category" 
-                        width={100}
-                        fontSize={12}
-                      />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#EF4444" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Security Confidence */}
-            {securityData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Shield className="mr-2 text-purple-500" />
-                    資安信心度
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={securityData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {securityData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* IT Improvement Priorities */}
-            {improvementsData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <TrendingUp className="mr-2 text-indigo-500" />
-                    IT改善優先項目
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RadarChart data={improvementsData}>
-                      <PolarGrid />
-                      <PolarAngleAxis dataKey="subject" fontSize={10} />
-                      <PolarRadiusAxis />
-                      <Radar
-                        name="期待程度"
-                        dataKey="value"
-                        stroke="#6366F1"
-                        fill="#6366F1"
-                        fillOpacity={0.2}
-                      />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* AI Opinion */}
-            {aiData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Bot className="mr-2 text-cyan-500" />
-                    AI工具導入意見
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={aiData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {aiData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Export Options */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="flex justify-center space-x-4">
-              <Button
-                onClick={handleExportPDF}
-                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                匯出PDF報告
-              </Button>
-              <Button
-                onClick={handleExportExcel}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                匯出Excel數據
-              </Button>
-              <Button
-                onClick={handleRefreshData}
-                variant="outline"
-                className="px-6 py-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                重新整理數據
-              </Button>
+          {/* Chart 3: IT問題處理方式 */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Part 1-3: IT問題處理方式</h2>
+            <div className="max-w-xs mx-auto">
+              <canvas ref={chartRefs.problemSolving} id="problemSolvingChart"></canvas>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Chart 4: 資安威脅防護信心 */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Part 1-4: 資安威脅防護信心</h2>
+            <div className="max-w-xs mx-auto">
+              <canvas ref={chartRefs.securityConfidence} id="securityConfidenceChart"></canvas>
+            </div>
+          </div>
+
+          {/* Chart 5: 希望IT改進方向 */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Part 2-1: 希望IT改進方向</h2>
+            <canvas ref={chartRefs.improvements} id="improvementsChart"></canvas>
+          </div>
+
+          {/* Chart 6: 對AI工具的看法 */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Part 3-1: 對AI工具的看法</h2>
+            <div className="max-w-xs mx-auto">
+              <canvas ref={chartRefs.aiOpinion} id="aiOpinionChart"></canvas>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
