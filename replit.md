@@ -25,7 +25,7 @@ This is a full-stack web application designed to collect and analyze IT infrastr
 - **Database**: PostgreSQL with Drizzle ORM
 - **Database Provider**: Neon Database (serverless PostgreSQL)
 - **Schema Management**: Drizzle Kit for migrations and schema management
-- **Development Storage**: In-memory storage for development/testing
+- **Production Storage**: DatabaseStorage class for persistent data storage
 
 ## Key Components
 

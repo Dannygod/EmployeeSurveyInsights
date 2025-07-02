@@ -1,4 +1,4 @@
-import { users, surveyResponses, type User, type InsertUser, type SurveyResponse, type InsertSurveyResponse } from "@shared/schema";
+import { users, type User, type InsertUser, type SurveyResponse, type InsertSurveyResponse } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -12,145 +12,145 @@ export interface IStorage {
   getSurveyAnalytics(): Promise<any>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private surveyResponses: Map<number, SurveyResponse>;
-  private currentUserId: number;
-  private currentSurveyId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.surveyResponses = new Map();
-    this.currentUserId = 1;
-    this.currentSurveyId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const { db } = await import("./db");
+    const { users } = await import("@shared/schema");
+    const { eq } = await import("drizzle-orm");
+    
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const { db } = await import("./db");
+    const { users } = await import("@shared/schema");
+    const { eq } = await import("drizzle-orm");
+    
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const { db } = await import("./db");
+    const { users } = await import("@shared/schema");
+    
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
-  async createSurveyResponse(insertResponse: InsertSurveyResponse): Promise<SurveyResponse> {
-    const id = this.currentSurveyId++;
-    const response: SurveyResponse = {
-      ...insertResponse,
-      id,
-      createdAt: new Date(),
-      // Ensure proper null values for optional fields
-      itResources: insertResponse.itResources || null,
-      itResourcesOther: insertResponse.itResourcesOther || null,
-      itProblems: insertResponse.itProblems || null,
-      helpMethod: insertResponse.helpMethod || null,
-      formKnowledge: insertResponse.formKnowledge || null,
-      securityConfidence: insertResponse.securityConfidence || null,
-      remoteAccess: insertResponse.remoteAccess || null,
-      internalSecurity: insertResponse.internalSecurity || null,
-      improvements: insertResponse.improvements || null,
-      aiOpinion: insertResponse.aiOpinion || null,
-      feedback: insertResponse.feedback || null,
-    };
-    this.surveyResponses.set(id, response);
-    return response;
+  async createSurveyResponse(response: InsertSurveyResponse): Promise<SurveyResponse> {
+    const { db } = await import("./db");
+    const { surveyResponses } = await import("@shared/schema");
+    
+    const [surveyResponse] = await db
+      .insert(surveyResponses)
+      .values(response)
+      .returning();
+    return surveyResponse;
   }
 
   async getAllSurveyResponses(): Promise<SurveyResponse[]> {
-    return Array.from(this.surveyResponses.values());
+    const { db } = await import("./db");
+    const { surveyResponses } = await import("@shared/schema");
+    
+    return await db.select().from(surveyResponses);
   }
 
   async getSurveyResponseById(id: number): Promise<SurveyResponse | undefined> {
-    return this.surveyResponses.get(id);
+    const { db } = await import("./db");
+    const { surveyResponses } = await import("@shared/schema");
+    const { eq } = await import("drizzle-orm");
+    
+    const [response] = await db.select().from(surveyResponses).where(eq(surveyResponses.id, id));
+    return response || undefined;
   }
 
   async getSurveyAnalytics(): Promise<any> {
-    const responses = Array.from(this.surveyResponses.values());
-    const totalResponses = responses.length;
-
-    if (totalResponses === 0) {
+    const responses = await this.getAllSurveyResponses();
+    
+    if (responses.length === 0) {
       return {
         totalResponses: 0,
         completionRate: 0,
-        avgTime: "0分",
-        lastUpdate: "無數據",
+        avgTime: "0分鐘",
+        lastUpdate: new Date().toLocaleString("zh-TW"),
         companyDistribution: {},
         itResourcesUsage: {},
         commonProblems: {},
         securityConfidence: {},
         improvementPriorities: {},
-        aiOpinion: {},
+        aiOpinion: {}
       };
     }
 
-    // Calculate company distribution
-    const companyDistribution = responses.reduce((acc, resp) => {
-      acc[resp.company] = (acc[resp.company] || 0) + 1;
+    // Company distribution
+    const companyDistribution = responses.reduce((acc, response) => {
+      const company = response.company || "未知";
+      acc[company] = (acc[company] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate IT resources usage
-    const itResourcesUsage = responses.reduce((acc, resp) => {
-      resp.itResources?.forEach((resource: string) => {
-        acc[resource] = (acc[resource] || 0) + 1;
-      });
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Calculate common problems
-    const commonProblems = responses.reduce((acc, resp) => {
-      resp.itProblems?.forEach((problem: string) => {
-        acc[problem] = (acc[problem] || 0) + 1;
-      });
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Calculate security confidence
-    const securityConfidence = responses.reduce((acc, resp) => {
-      if (resp.securityConfidence) {
-        acc[resp.securityConfidence] = (acc[resp.securityConfidence] || 0) + 1;
+    // IT resources usage
+    const itResourcesUsage = responses.reduce((acc, response) => {
+      if (response.itResources && Array.isArray(response.itResources)) {
+        response.itResources.forEach((resource: string) => {
+          acc[resource] = (acc[resource] || 0) + 1;
+        });
       }
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate improvement priorities
-    const improvementPriorities = responses.reduce((acc, resp) => {
-      resp.improvements?.forEach((improvement: string) => {
-        acc[improvement] = (acc[improvement] || 0) + 1;
-      });
+    // Common problems (using itProblems from schema)
+    const commonProblems = responses.reduce((acc, response) => {
+      if (response.itProblems && Array.isArray(response.itProblems)) {
+        response.itProblems.forEach((problem: string) => {
+          acc[problem] = (acc[problem] || 0) + 1;
+        });
+      }
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate AI opinion
-    const aiOpinion = responses.reduce((acc, resp) => {
-      if (resp.aiOpinion) {
-        acc[resp.aiOpinion] = (acc[resp.aiOpinion] || 0) + 1;
+    // Security confidence
+    const securityConfidence = responses.reduce((acc, response) => {
+      const confidence = response.securityConfidence || "未知";
+      acc[confidence] = (acc[confidence] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Improvement priorities (using improvements from schema)
+    const improvementPriorities = responses.reduce((acc, response) => {
+      if (response.improvements && Array.isArray(response.improvements)) {
+        response.improvements.forEach((priority: string) => {
+          acc[priority] = (acc[priority] || 0) + 1;
+        });
       }
+      return acc;
+    }, {} as Record<string, number>);
+
+    // AI opinion
+    const aiOpinion = responses.reduce((acc, response) => {
+      const opinion = response.aiOpinion || "未知";
+      acc[opinion] = (acc[opinion] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     return {
-      totalResponses,
-      completionRate: Math.round((totalResponses / (totalResponses + 10)) * 100), // Assuming some incomplete responses
-      avgTime: "8.5分",
-      lastUpdate: responses.length > 0 ? "剛剛" : "無數據",
+      totalResponses: responses.length,
+      completionRate: 100, // Assuming all responses are complete
+      avgTime: "5分鐘", // Placeholder average time
+      lastUpdate: new Date().toLocaleString("zh-TW"),
       companyDistribution,
       itResourcesUsage,
       commonProblems,
       securityConfidence,
       improvementPriorities,
-      aiOpinion,
+      aiOpinion
     };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
